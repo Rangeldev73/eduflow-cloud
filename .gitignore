@@ -1,0 +1,20 @@
+# Maven
+target/
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Spring Boot
+HELP.md
+*.log
+
+# Variáveis de ambiente / segredos locais
+.env
+.env.local
+
+# SO
+.DS_Store
+Thumbs.db
