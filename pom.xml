@@ -49,11 +49,11 @@
 
     <modules>
         <module>domain-services/course-service</module>
-        <module>domain-services/enrollment-service</module>
+        <!--module>domain-services/enrollment-service</module>
         <module>domain-services/certificate-service</module>
         <module>domain-services/notification-service</module>
         <module>infrastructure/config-server</module>
         <module>infrastructure/eureka-server</module>
-        <module>infrastructure/api-gateway</module>
+        <module>infrastructure/api-gateway</module> -->
     </modules>
 </project>
