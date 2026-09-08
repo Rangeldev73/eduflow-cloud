@@ -36,7 +36,7 @@ public class CourseController {
 
     @PostMapping("/{id}/modules")
     public ResponseEntity<CourseResponse> addModule(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody @Valid AddModuleRequest request
     ) {
         CourseResponse response = addModuleUseCase.execute(id, request);
@@ -44,7 +44,7 @@ public class CourseController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CourseResponse> getCourseById(@PathVariable UUID id) {
+    public ResponseEntity<CourseResponse> getCourseById(@PathVariable("id") UUID id) {
         CourseResponse response = getCourseByIdUseCase.execute(id);
         return ResponseEntity.ok(response);
     }
