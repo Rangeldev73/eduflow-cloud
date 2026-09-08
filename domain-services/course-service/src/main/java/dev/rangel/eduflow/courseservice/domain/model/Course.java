@@ -18,7 +18,6 @@ import lombok.NoArgsConstructor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -53,7 +52,8 @@ public class Course {
         validateTitle(title);
         this.title = title.trim();
         this.description = description;
-        this.level = Objects.requireNonNull(level, "Course level cannot be null");
+        validateLevel(level);
+        this.level = level;
     }
 
     public void addModule(String title, String description, int duration) {
@@ -78,6 +78,12 @@ public class Course {
     private void validateTitle(String title) {
         if (title == null || title.isBlank()) {
             throw new IllegalArgumentException("Title cannot be null or blank");
+        }
+    }
+
+    private void validateLevel(CourseLevel level) {
+        if (level == null) {
+            throw new IllegalArgumentException("Course level cannot be null");
         }
     }
 

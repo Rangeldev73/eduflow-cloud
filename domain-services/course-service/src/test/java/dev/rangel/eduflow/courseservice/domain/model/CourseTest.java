@@ -37,9 +37,9 @@ class CourseTest {
     }
 
     @Test
-    @DisplayName("Should throw NullPointerException when creating course with null level")
+    @DisplayName("Should throw IllegalArgumentException when creating course with null level")
     void shouldThrowExceptionWhenCreatingCourseWithNullLevel() {
-        assertThrows(NullPointerException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> new Course("Valid Title", "Valid description", null));
     }
 
