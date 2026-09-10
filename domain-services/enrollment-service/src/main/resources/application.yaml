@@ -1,11 +1,13 @@
+server:
+  port: 8081
 spring:
   application:
-    name: course-service
+    name: enrollment-service
 
   datasource:
-    url: ${SPRING_DATASOURCE_COURSE_URL}
-    username: ${COURSE_DB_USER}
-    password: ${COURSE_DB_PASSWORD}
+    url: ${SPRING_DATASOURCE_ENROLLMENT_URL}
+    username: ${ENROLLMENT_DB_USER}
+    password: ${ENROLLMENT_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:

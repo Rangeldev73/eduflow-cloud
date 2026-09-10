@@ -4,16 +4,26 @@ services:
   postgres-course-service:
     image: postgres:16-alpine
     container_name: eduflow-postgres-course
-    env_file:
-      - .env
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${COURSE_DB_NAME}
+      POSTGRES_USER: ${COURSE_DB_USER}
+      POSTGRES_PASSWORD: ${COURSE_DB_PASSWORD}
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "${COURSE_DB_PORT}:5432"
     volumes:
       - postgres_course_data:/var/lib/postgresql/data
 
+  postgres-enrollment-service:
+    image: postgres:16-alpine
+    container_name: eduflow-postgres-enrollment
+    environment:
+      POSTGRES_DB: ${ENROLLMENT_DB_NAME}
+      POSTGRES_USER: ${ENROLLMENT_DB_USER}
+      POSTGRES_PASSWORD: ${ENROLLMENT_DB_PASSWORD}
+    ports:
+      - "${ENROLLMENT_DB_PORT}:5432"
+    volumes:
+      - postgres_enrollment_data:/var/lib/postgresql/data
 volumes:
   postgres_course_data:
+  postgres_enrollment_data:
