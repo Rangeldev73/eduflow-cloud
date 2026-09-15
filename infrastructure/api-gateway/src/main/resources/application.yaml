@@ -1,0 +1,24 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: course-service
+              uri: lb://course-service
+              predicates:
+                - Path=/courses/**
+            - id: enrollment-service
+              uri: lb://enrollment-service
+              predicates:
+                - Path=/enrollments/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
