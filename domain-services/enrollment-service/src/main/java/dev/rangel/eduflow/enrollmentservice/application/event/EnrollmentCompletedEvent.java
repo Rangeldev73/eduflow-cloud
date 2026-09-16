@@ -1,4 +1,11 @@
 package dev.rangel.eduflow.enrollmentservice.application.event;
 
-public record EnrollmentCompletedEvent() {
-}
+import java.time.Instant;
+import java.util.UUID;
+
+public record EnrollmentCompletedEvent(
+        UUID enrollmentId,
+        UUID studentId,
+        UUID courseId,
+        Instant completedAt
+) {}
