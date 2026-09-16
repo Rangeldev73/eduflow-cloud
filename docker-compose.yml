@@ -24,6 +24,18 @@ services:
       - "${ENROLLMENT_DB_PORT}:5432"
     volumes:
       - postgres_enrollment_data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: eduflow-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+
 volumes:
   postgres_course_data:
   postgres_enrollment_data:
+  rabbitmq_data:
