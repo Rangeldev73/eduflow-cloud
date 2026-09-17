@@ -1,9 +1,11 @@
-package dev.rangel.eduflow.certificateservice.infrastructure.messaging.event;
+package dev.rangel.eduflow.certificateservice.infrastructure.messaging;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public record EnrollmentCompletedEvent(
         UUID enrollmentId,
         UUID studentId,
-        UUID courseId
+        UUID courseId,
+        Instant completedAt
 ) {}
