@@ -4,6 +4,7 @@ target/
 
 # IDE
 .idea/
+.run/
 *.iml
 .vscode/
 

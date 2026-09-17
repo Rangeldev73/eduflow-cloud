@@ -25,6 +25,18 @@ services:
     volumes:
       - postgres_enrollment_data:/var/lib/postgresql/data
 
+  postgres-certificate-service:
+    image: postgres:16-alpine
+    container_name: eduflow-postgres-certificate
+    environment:
+      POSTGRES_DB: ${CERTIFICATE_DB_NAME}
+      POSTGRES_USER: ${CERTIFICATE_DB_USER}
+      POSTGRES_PASSWORD: ${CERTIFICATE_DB_PASSWORD}
+    ports:
+      - "${CERTIFICATE_DB_PORT}:5432"
+    volumes:
+      - postgres_certificate_data:/var/lib/postgresql/data
+
   rabbitmq:
     image: rabbitmq:4-management
     container_name: eduflow-rabbitmq
@@ -38,4 +50,5 @@ services:
 volumes:
   postgres_course_data:
   postgres_enrollment_data:
+  postgres_certificate_data:
   rabbitmq_data:
