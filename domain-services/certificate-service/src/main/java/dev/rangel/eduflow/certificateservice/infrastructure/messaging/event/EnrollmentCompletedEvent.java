@@ -1,4 +1,4 @@
-package dev.rangel.eduflow.certificateservice.infrastructure.messaging;
+package dev.rangel.eduflow.certificateservice.infrastructure.messaging.event;
 
 import java.time.Instant;
 import java.util.UUID;

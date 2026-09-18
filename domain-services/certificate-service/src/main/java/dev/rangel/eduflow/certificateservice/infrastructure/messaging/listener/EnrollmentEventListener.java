@@ -1,6 +1,9 @@
-package dev.rangel.eduflow.certificateservice.infrastructure.messaging;
+package dev.rangel.eduflow.certificateservice.infrastructure.messaging.listener;
 
 import dev.rangel.eduflow.certificateservice.domain.model.Certificate;
+import dev.rangel.eduflow.certificateservice.infrastructure.messaging.event.CertificateIssuedEvent;
+import dev.rangel.eduflow.certificateservice.infrastructure.messaging.event.EnrollmentCompletedEvent;
+import dev.rangel.eduflow.certificateservice.infrastructure.messaging.producer.CertificateEventProducer;
 import dev.rangel.eduflow.certificateservice.infrastructure.persistence.repository.CertificateRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +20,7 @@ import org.springframework.stereotype.Component;
 public class EnrollmentEventListener {
 
     private final CertificateRepository certificateRepository;
+    private final CertificateEventProducer certificateEventProducer;
 
     @RabbitListener(bindings = @QueueBinding(
             value = @Queue(value = "certificate.enrollment-completed.queue", durable = "true"),
@@ -37,9 +41,30 @@ public class EnrollmentEventListener {
             log.info("Certificate successfully issued with code: {} for enrollment ID: {}",
                     certificate.getCertificateCode(), event.enrollmentId());
 
+            publishEvent(certificate);
+
         } catch (DataIntegrityViolationException e) {
-            log.warn("Duplicate processing detected for enrollment ID: {}. Event already processed. Acknowledging message.",
+            log.warn("Duplicate processing detected for enrollment ID: {}. Certificate already exists. Ensuring event is published.",
                     event.enrollmentId());
+
+            certificateRepository.findByEnrollmentId(event.enrollmentId())
+                    .ifPresentOrElse(
+                            this::publishEvent,
+                            () -> log.error("DataIntegrityViolationException for enrollment ID: {} but no certificate found — possible certificateCode collision, needs investigation.",
+                                    event.enrollmentId())
+                    );
         }
+    }
+
+    private void publishEvent(Certificate certificate) {
+        CertificateIssuedEvent issuedEvent = new CertificateIssuedEvent(
+                certificate.getId(),
+                certificate.getEnrollmentId(),
+                certificate.getStudentId(),
+                certificate.getCourseId(),
+                certificate.getCertificateCode(),
+                certificate.getIssuedAt()
+        );
+        certificateEventProducer.sendCertificateIssued(issuedEvent);
     }
 }
