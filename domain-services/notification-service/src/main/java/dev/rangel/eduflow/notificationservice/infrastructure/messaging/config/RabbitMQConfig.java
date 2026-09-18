@@ -1,4 +1,4 @@
-package dev.rangel.eduflow.notificationservice.infrastructure.message.config;
+package dev.rangel.eduflow.notificationservice.infrastructure.messaging.config;
 
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
