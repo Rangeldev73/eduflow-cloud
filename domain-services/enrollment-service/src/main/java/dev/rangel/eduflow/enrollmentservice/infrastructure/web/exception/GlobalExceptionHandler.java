@@ -1,7 +1,9 @@
 package dev.rangel.eduflow.enrollmentservice.infrastructure.web.exception;
 
+import dev.rangel.eduflow.enrollmentservice.domain.exception.CourseServiceUnavailableException;
 import dev.rangel.eduflow.enrollmentservice.domain.exception.DuplicateEnrollmentException;
 import dev.rangel.eduflow.enrollmentservice.domain.exception.EnrollmentNotFoundException;
+import dev.rangel.eduflow.enrollmentservice.domain.exception.CourseNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -28,6 +30,30 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(CourseNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleCourseNotFound(CourseNotFoundException ex, HttpServletRequest request) {
+        ErrorResponse error = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "Not Found",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(CourseServiceUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleCourseServiceUnavailable(CourseServiceUnavailableException ex, HttpServletRequest request) {
+        ErrorResponse error = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                "Service Unavailable",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error);
     }
 
     @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
