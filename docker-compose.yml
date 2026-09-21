@@ -46,6 +46,11 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
 
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: eduflow-zipkin
+    ports:
+      - "9411:9411"
 
 volumes:
   postgres_course_data:
