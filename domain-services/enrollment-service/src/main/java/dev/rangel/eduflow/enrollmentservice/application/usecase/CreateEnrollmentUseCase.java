@@ -6,9 +6,12 @@ import dev.rangel.eduflow.enrollmentservice.application.event.EnrollmentCreatedE
 import dev.rangel.eduflow.enrollmentservice.domain.exception.CourseNotFoundException;
 import dev.rangel.eduflow.enrollmentservice.domain.exception.DuplicateEnrollmentException;
 import dev.rangel.eduflow.enrollmentservice.domain.model.Enrollment;
+import dev.rangel.eduflow.enrollmentservice.domain.model.OutboxEvent;
 import dev.rangel.eduflow.enrollmentservice.infrastructure.client.CourseClient;
-import dev.rangel.eduflow.enrollmentservice.infrastructure.messaging.producer.EnrollmentEventProducer;
+import dev.rangel.eduflow.enrollmentservice.infrastructure.messaging.config.RabbitMQConfig;
 import dev.rangel.eduflow.enrollmentservice.infrastructure.persistence.repository.EnrollmentRepository;
+import dev.rangel.eduflow.enrollmentservice.infrastructure.persistence.repository.OutboxEventRepository;
+import dev.rangel.eduflow.enrollmentservice.infrastructure.serializer.EventSerializer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,8 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class CreateEnrollmentUseCase {
 
     private final EnrollmentRepository enrollmentRepository;
-    private final EnrollmentEventProducer eventProducer;
+    private final OutboxEventRepository outboxEventRepository;
     private final CourseClient courseClient;
+    private final EventSerializer eventSerializer;
 
     @Transactional
     public EnrollmentResponse execute(CreateEnrollmentRequest dto) {
@@ -35,12 +39,24 @@ public class CreateEnrollmentUseCase {
         Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
 
         EnrollmentCreatedEvent event = new EnrollmentCreatedEvent(
-                enrollment.getId(),
-                enrollment.getStudentId(),
-                enrollment.getCourseId(),
-                enrollment.getCreatedAt()
+                savedEnrollment.getId(),
+                savedEnrollment.getStudentId(),
+                savedEnrollment.getCourseId(),
+                savedEnrollment.getCreatedAt()
         );
-        eventProducer.sendEnrollmentCreated(event);
+
+        String payload = eventSerializer.serialize(event);
+
+        OutboxEvent outboxEvent = OutboxEvent.create(
+                "Enrollment",
+                savedEnrollment.getId(),
+                "EnrollmentCreated",
+                RabbitMQConfig.EXCHANGE_NAME,
+                "enrollment.created",
+                payload
+        );
+
+        outboxEventRepository.save(outboxEvent);
 
         return EnrollmentResponse.from(savedEnrollment);
     }

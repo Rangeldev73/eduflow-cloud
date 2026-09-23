@@ -4,8 +4,11 @@ import dev.rangel.eduflow.enrollmentservice.application.dto.response.EnrollmentR
 import dev.rangel.eduflow.enrollmentservice.application.event.EnrollmentCompletedEvent;
 import dev.rangel.eduflow.enrollmentservice.domain.exception.EnrollmentNotFoundException;
 import dev.rangel.eduflow.enrollmentservice.domain.model.Enrollment;
-import dev.rangel.eduflow.enrollmentservice.infrastructure.messaging.producer.EnrollmentEventProducer;
+import dev.rangel.eduflow.enrollmentservice.domain.model.OutboxEvent;
+import dev.rangel.eduflow.enrollmentservice.infrastructure.messaging.config.RabbitMQConfig;
 import dev.rangel.eduflow.enrollmentservice.infrastructure.persistence.repository.EnrollmentRepository;
+import dev.rangel.eduflow.enrollmentservice.infrastructure.persistence.repository.OutboxEventRepository;
+import dev.rangel.eduflow.enrollmentservice.infrastructure.serializer.EventSerializer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +21,8 @@ import java.util.UUID;
 public class CompleteEnrollmentUseCase {
 
     private final EnrollmentRepository enrollmentRepository;
-    private final EnrollmentEventProducer eventProducer;
+    private final OutboxEventRepository outboxEventRepository;
+    private final EventSerializer eventSerializer;
 
     @Transactional
     public EnrollmentResponse execute(UUID id) {
@@ -29,12 +33,24 @@ public class CompleteEnrollmentUseCase {
         Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
 
         EnrollmentCompletedEvent event = new EnrollmentCompletedEvent(
-                enrollment.getId(),
-                enrollment.getStudentId(),
-                enrollment.getCourseId(),
+                savedEnrollment.getId(),
+                savedEnrollment.getStudentId(),
+                savedEnrollment.getCourseId(),
                 Instant.now()
         );
-        eventProducer.sendEnrollmentCompleted(event);
+
+        String payload = eventSerializer.serialize(event);
+
+        OutboxEvent outboxEvent = OutboxEvent.create(
+                "Enrollment",
+                savedEnrollment.getId(),
+                "EnrollmentCompleted",
+                RabbitMQConfig.EXCHANGE_NAME,
+                "enrollment.completed",
+                payload
+        );
+
+        outboxEventRepository.save(outboxEvent);
 
         return EnrollmentResponse.from(savedEnrollment);
     }
