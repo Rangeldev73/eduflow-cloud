@@ -1,6 +1,8 @@
-version: '3.8'
-
 services:
+  # =========================================================================
+  # INFRASTRUCTURE DATABASES & MESSAGING
+  # =========================================================================
+
   postgres-course-service:
     image: postgres:16-alpine
     container_name: eduflow-postgres-course
@@ -12,6 +14,11 @@ services:
       - "${COURSE_DB_PORT}:5432"
     volumes:
       - postgres_course_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${COURSE_DB_USER} -d ${COURSE_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   postgres-enrollment-service:
     image: postgres:16-alpine
@@ -24,6 +31,11 @@ services:
       - "${ENROLLMENT_DB_PORT}:5432"
     volumes:
       - postgres_enrollment_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ENROLLMENT_DB_USER} -d ${ENROLLMENT_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   postgres-certificate-service:
     image: postgres:16-alpine
@@ -36,21 +48,164 @@ services:
       - "${CERTIFICATE_DB_PORT}:5432"
     volumes:
       - postgres_certificate_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CERTIFICATE_DB_USER} -d ${CERTIFICATE_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   rabbitmq:
     image: rabbitmq:4-management
     container_name: eduflow-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
       - "5672:5672"
       - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   zipkin:
     image: openzipkin/zipkin
     container_name: eduflow-zipkin
     ports:
       - "9411:9411"
+
+  # =========================================================================
+  # SPRING CLOUD INFRASTRUCTURE SERVICES
+  # =========================================================================
+
+  config-server:
+    build:
+      context: .
+      dockerfile: infrastructure/config-server/Dockerfile
+    container_name: eduflow-config-server
+    ports:
+      - "8888:8888"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8888/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  eureka-server:
+    build:
+      context: .
+      dockerfile: infrastructure/eureka-server/Dockerfile
+    container_name: eduflow-eureka-server
+    ports:
+      - "8761:8761"
+    depends_on:
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8761/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: infrastructure/api-gateway/Dockerfile
+    container_name: eduflow-api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  # =========================================================================
+  # DOMAIN MICROSERVICES
+  # =========================================================================
+
+  course-service:
+    build:
+      context: .
+      dockerfile: domain-services/course-service/Dockerfile
+    container_name: eduflow-course-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_COURSE_URL}
+      - SPRING_DATASOURCE_USERNAME=${COURSE_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${COURSE_DB_PASSWORD}
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+    depends_on:
+      postgres-course-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  enrollment-service:
+    build:
+      context: .
+      dockerfile: domain-services/enrollment-service/Dockerfile
+    container_name: eduflow-enrollment-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_ENROLLMENT_URL}
+      - SPRING_DATASOURCE_USERNAME=${ENROLLMENT_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${ENROLLMENT_DB_PASSWORD}
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+    depends_on:
+      postgres-enrollment-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  certificate-service:
+    build:
+      context: .
+      dockerfile: domain-services/certificate-service/Dockerfile
+    container_name: eduflow-certificate-service
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_CERTIFICATE_URL}
+      - SPRING_DATASOURCE_USERNAME=${CERTIFICATE_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${CERTIFICATE_DB_PASSWORD}
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+    depends_on:
+      postgres-certificate-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: domain-services/notification-service/Dockerfile
+    container_name: eduflow-notification-service
+    ports:
+      - "8084:8084"
+    environment:
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
 
 volumes:
   postgres_course_data:
